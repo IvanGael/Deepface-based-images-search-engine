@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Search Engine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="drawer">
+        <h1>Image Search Engine</h1>
+    </div>
+    <div class="main-content">
+        <form id="upload-form" enctype="multipart/form-data">
+            <div class="input-group">
+                <input type="file" name="file" id="file" accept="image/*" required>
+                <label for="file">Choose a file</label>
+            </div>
+            <button type="submit" class="upload-btn">Upload and Search</button>
+        </form>
+        <div id="loading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+        </div>
+        <div id="results" class="grid-view">
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            const form = $('#upload-form');
+            const fileInput = $('#file');
+            const fileLabel = $('label[for="file"]');
+            const submitButton = $('.upload-btn');
+            const loading = $('#loading');
+            const results = $('#results');
+
+            fileInput.on('change', function() {
+                const fileName = $(this).val().split('\\').pop();
+                fileLabel.text(fileName || 'Choose a file');
+            });
+
+            form.submit(function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                submitButton.prop('disabled', true);
+                loading.show();
+                results.hide();
+
+                $.ajax({
+                    url: '/',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        if (response.error) {
+                            results.html('<p class="error">Error: ' + response.error + '</p>');
+                        } else {
+                            let html = '<h2>Similar Images:</h2>';
+                            if (response.similar_images.length > 0) {
+                                response.similar_images.forEach(function(image) {
+                                    html += '<div class="card"><img src="' + image + '" alt="Similar image"></div>';
+                                });
+                            } else {
+                                html += '<p>No similar images found.</p>';
+                            }
+                            results.html(html);
+                        }
+                    },
+                    error: function() {
+                        results.html('<p class="error">An error occurred.</p>');
+                    },
+                    complete: function() {
+                        submitButton.prop('disabled', false);
+                        loading.hide();
+                        results.show();
+                        form[0].reset();
+                        fileLabel.text('Choose a file');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
